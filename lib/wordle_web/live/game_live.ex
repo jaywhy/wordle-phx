@@ -7,9 +7,61 @@ defmodule WordleWeb.GameLive do
       socket
       |> assign(:current_word, "jason")
       |> assign(:guesses, create_guesses())
+      |> assign(:keyboard, create_keyboard())
+      |> assign(:current_row, 0)
+      |> assign(:current_column, 0)
 
-    IO.inspect(socket.assigns.guesses)
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
+      when socket.assigns.current_column >= 5 do
+    socket =
+      socket
+      |> assign(:current_row, socket.assigns.current_row + 1)
+      |> assign(:current_column, 0)
+
+    {:noreply, socket}
+  end
+
+  # Can't hit enter until row is filled.
+  def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
+      when socket.assigns.current_column < 5 do
+    {:noreply, socket}
+  end
+
+  def handle_event("keyboard-press", _params, socket)
+      when socket.assigns.current_column >= 5 do
+    {:noreply, socket}
+  end
+
+  def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
+      when socket.assigns.current_row >= 6 do
+    # Game is done
+    {:noreply, socket}
+  end
+
+  def handle_event("keyboard-press", %{"letter" => letter}, socket) do
+    socket =
+      socket
+      |> assign(
+        :guesses,
+        set_letter(socket.assigns, letter)
+      )
+      |> assign(:current_column, socket.assigns.current_column + 1)
+
+    IO.inspect(socket.assigns)
+    {:noreply, socket}
+  end
+
+  defp set_letter(assigns, letter) do
+    guess =
+      assigns.guesses
+      |> Enum.at(assigns.current_row)
+      |> List.replace_at(assigns.current_column, letter)
+
+    assigns.guesses |> List.replace_at(assigns.current_row, guess)
   end
 
   defp create_guesses do
@@ -21,5 +73,17 @@ defmodule WordleWeb.GameLive do
 
   defp create_guess(word_length) do
     for _i <- 1..word_length, into: [], do: ""
+  end
+
+  defp create_keyboard do
+    [
+      ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+      ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+      ['Enter', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Backspace']
+    ]
+  end
+
+  defp match_letter(letter) do
+    letter
   end
 end

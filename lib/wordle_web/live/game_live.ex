@@ -6,8 +6,8 @@ defmodule WordleWeb.GameLive do
     socket =
       socket
       |> assign(:current_word, "jason")
-      |> assign(:guesses, create_guesses())
       |> assign(:keyboard, create_keyboard())
+      |> assign(:guesses, create_guesses())
       |> assign(:current_row, 0)
       |> assign(:current_column, 0)
 
@@ -81,6 +81,19 @@ defmodule WordleWeb.GameLive do
       ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
       ['Enter', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Backspace']
     ]
+  end
+
+  defp letter_classnames(guess, letter, position) do
+    cond do
+      guess |> String.at(position) == letter ->
+        "bg-green-600 border-green-600 text-white"
+
+      guess |> String.contains?(letter) ->
+        "bg-yellow-500 border-yellow-500 text-white"
+
+      true ->
+        "bg-gray-500 border-gray-500 text-white"
+    end
   end
 
   defp match_letter(letter) do

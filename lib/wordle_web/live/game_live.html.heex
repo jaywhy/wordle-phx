@@ -1,18 +1,23 @@
 <div class="flex flex-col items-center">
-  <%= for guess <- @guesses do %>
+  <%= @guesses |> Enum.with_index |> Enum.map(fn {guess, i} -> %>
   <div class="flex">
-    <%= for letter <- guess do %>
+    <%= guess |> Enum.with_index |> Enum.map(fn {letter, j} -> %>
+      <%= if i < @current_row do %>
+        <div class={"flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase #{letter_classnames(@current_word, letter, j)}"}> <%= letter %>
+        </div>
+      <% else %>
     <div
-      class="flex justify-center items-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase"
+      class="flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase"
     >
       <%= letter %>
     </div>
-    <% end %>
+        <% end %>
+    <% end) %>
   </div>
-  <% end %>
+  <% end) %>
 </div>
 <div class="flex flex-col items-center">
-  <%= for row <- @keyboard do %>
+  <%= @keyboard |> Enum.with_index |> Enum.map(fn {row, _i} -> %>
   <div class="flex">
     <%= for letter <- row do %>
     <div class="flex flex-row">
@@ -26,5 +31,5 @@
     </div>
     <% end %>
   </div>
-  <% end %>
+  <% end) %>
 </div>

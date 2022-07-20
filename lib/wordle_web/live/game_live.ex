@@ -39,6 +39,7 @@ defmodule WordleWeb.GameLive do
           socket |> assign(:game_state, :lost)
 
         bad_word?(socket.assigns) ->
+          IO.puts("bad_word: #{current_guess(socket.assigns)}")
           socket |> assign(:game_state, :bad_word)
 
         true ->
@@ -114,20 +115,19 @@ defmodule WordleWeb.GameLive do
   end
 
   defp game_won?(assigns),
-    do: current_guess(assigns.guesses, assigns.current_row) == assigns.current_word
+    do: current_guess(assigns) == assigns.current_word
 
   defp game_lost?(assigns) do
     assigns.current_row >= 6 &&
-      current_guess(assigns.guesses, assigns.current_row) != assigns.current_word
+      current_guess(assigns) != assigns.current_word
   end
 
   defp bad_word?(assigns) do
-    current_guess(assigns.guesses, assigns.current_row)
-    |> WordList.bad_word?()
+    current_guess(assigns) |> WordList.bad_word?()
   end
 
-  defp current_guess(guesses, current_row) do
-    guesses |> Enum.at(current_row) |> Enum.join("")
+  defp current_guess(assigns) do
+    assigns.guesses |> Enum.at(assigns.current_row) |> Enum.join("")
   end
 
   defp set_letter(assigns, letter) do

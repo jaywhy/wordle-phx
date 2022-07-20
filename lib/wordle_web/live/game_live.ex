@@ -29,16 +29,23 @@ defmodule WordleWeb.GameLive do
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
       when socket.assigns.current_column >= 5 do
     socket =
-      if game_won?(socket.assigns) do
-        socket |> assign(:game_state, :won)
-      else
-        socket
-      end
+      cond do
+        game_won?(socket.assigns) ->
+          socket
+          |> assign(:game_state, :won)
+          |> assign(:current_row, socket.assigns.current_row + 1)
 
-    socket =
-      socket
-      |> assign(:current_row, socket.assigns.current_row + 1)
-      |> assign(:current_column, 0)
+        game_lost?(socket.assigns) ->
+          socket |> assign(:game_state, :lost)
+
+        bad_word?(socket.assigns) ->
+          socket |> assign(:game_state, :bad_word)
+
+        true ->
+          socket
+          |> assign(:current_row, socket.assigns.current_row + 1)
+          |> assign(:current_column, 0)
+      end
 
     {:noreply, socket}
   end
@@ -61,7 +68,6 @@ defmodule WordleWeb.GameLive do
         set_letter(socket.assigns, "")
       )
 
-    IO.puts("Backspace!!!!!!!!!!!!!")
     {:noreply, socket}
   end
 
@@ -109,6 +115,16 @@ defmodule WordleWeb.GameLive do
 
   defp game_won?(assigns),
     do: current_guess(assigns.guesses, assigns.current_row) == assigns.current_word
+
+  defp game_lost?(assigns) do
+    assigns.current_row >= 6 &&
+      current_guess(assigns.guesses, assigns.current_row) != assigns.current_word
+  end
+
+  defp bad_word?(assigns) do
+    current_guess(assigns.guesses, assigns.current_row)
+    |> WordList.bad_word?()
+  end
 
   defp current_guess(guesses, current_row) do
     guesses |> Enum.at(current_row) |> Enum.join("")

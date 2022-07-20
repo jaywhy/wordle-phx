@@ -8,7 +8,8 @@
   <div class="flex">
     <%= guess |> Enum.with_index |> Enum.map(fn {letter, j} -> %>
       <%= if i < @current_row do %>
-        <div class={"flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase #{letter_classnames(@current_word, letter, j)}"}> <%= letter %>
+        <div class={"flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase #{letter_classnames(@current_word, letter, j)}"}>
+          <%= letter %>
         </div>
       <% else %>
     <div

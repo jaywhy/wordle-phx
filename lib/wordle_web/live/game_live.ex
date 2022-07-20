@@ -6,6 +6,7 @@ defmodule WordleWeb.GameLive do
     socket =
       socket
       |> assign(:current_word, "jason")
+      |> assign(:current_guess, "")
       |> assign(:keyboard, create_keyboard())
       |> assign(:guesses, create_guesses())
       |> assign(:current_row, 0)
@@ -17,11 +18,37 @@ defmodule WordleWeb.GameLive do
   @impl true
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
       when socket.assigns.current_column >= 5 do
+    if game_won?(socket.assigns) do
+      IO.puts("You've won!")
+    end
+
     socket =
       socket
       |> assign(:current_row, socket.assigns.current_row + 1)
       |> assign(:current_column, 0)
 
+    {:noreply, socket}
+  end
+
+  # Backspace upto the first column.
+  def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket)
+      when socket.assigns.current_column <= 0 do
+    {:noreply, socket}
+  end
+
+  def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket) do
+    socket =
+      socket
+      |> assign(:current_column, socket.assigns.current_column - 1)
+
+    socket =
+      socket
+      |> assign(
+        :guesses,
+        set_letter(socket.assigns, "")
+      )
+
+    IO.puts("Backspace!!!!!!!!!!!!!")
     {:noreply, socket}
   end
 
@@ -43,6 +70,8 @@ defmodule WordleWeb.GameLive do
   end
 
   def handle_event("keyboard-press", %{"letter" => letter}, socket) do
+    IO.puts("letter: #{letter}")
+
     socket =
       socket
       |> assign(
@@ -53,6 +82,13 @@ defmodule WordleWeb.GameLive do
 
     IO.inspect(socket.assigns)
     {:noreply, socket}
+  end
+
+  defp game_won?(assigns),
+    do: current_guess(assigns.guesses, assigns.current_row) == assigns.current_word
+
+  defp current_guess(guesses, current_row) do
+    guesses |> Enum.at(current_row) |> Enum.join("")
   end
 
   defp set_letter(assigns, letter) do

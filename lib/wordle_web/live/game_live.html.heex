@@ -1,6 +1,5 @@
 <%= if @game_state == :won do %>
-  <p>You won!</p>
-  <button class="" phx-click="reset">Play again</button>
+  <.won word={@current_word} />
 <% end %>
 
 <div class="flex flex-col items-center">

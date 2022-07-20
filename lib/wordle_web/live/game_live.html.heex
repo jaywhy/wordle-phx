@@ -1,3 +1,8 @@
+<%= if @game_state == :won do %>
+  <p>You won!</p>
+  <button class="" phx-click="reset">Play again</button>
+<% end %>
+
 <div class="flex flex-col items-center">
   <%= @guesses |> Enum.with_index |> Enum.map(fn {guess, i} -> %>
   <div class="flex">

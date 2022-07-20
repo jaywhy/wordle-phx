@@ -1,26 +1,39 @@
 defmodule WordleWeb.GameLive do
   use WordleWeb, :live_view
 
+  alias Wordle.WordList
+
   @impl true
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:current_word, "jason")
-      |> assign(:current_guess, "")
-      |> assign(:keyboard, create_keyboard())
-      |> assign(:guesses, create_guesses())
-      |> assign(:current_row, 0)
-      |> assign(:current_column, 0)
+      |> initialize_game_state
 
     {:ok, socket}
   end
 
   @impl true
+  def handle_event("reset", _, socket) do
+    socket =
+      socket
+      |> initialize_game_state()
+
+    {:noreply, socket}
+  end
+
+  def handle_event(_, _, socket)
+      when socket.assigns.game_state == :won do
+    {:noreply, socket}
+  end
+
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
       when socket.assigns.current_column >= 5 do
-    if game_won?(socket.assigns) do
-      IO.puts("You've won!")
-    end
+    socket =
+      if game_won?(socket.assigns) do
+        socket |> assign(:game_state, :won)
+      else
+        socket
+      end
 
     socket =
       socket
@@ -82,6 +95,16 @@ defmodule WordleWeb.GameLive do
 
     IO.inspect(socket.assigns)
     {:noreply, socket}
+  end
+
+  defp initialize_game_state(socket) do
+    socket
+    |> assign(:game_state, :new)
+    |> assign(:current_word, WordList.random_word())
+    |> assign(:current_row, 0)
+    |> assign(:current_column, 0)
+    |> assign(:guesses, create_guesses())
+    |> assign(:keyboard, create_keyboard())
   end
 
   defp game_won?(assigns),

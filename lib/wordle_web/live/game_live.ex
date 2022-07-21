@@ -2,6 +2,7 @@ defmodule WordleWeb.GameLive do
   use WordleWeb, :live_view
 
   alias Wordle.WordList
+  alias Phoenix.LiveView.JS
 
   @impl true
   def mount(_params, _session, socket) do
@@ -40,7 +41,10 @@ defmodule WordleWeb.GameLive do
 
         bad_word?(socket.assigns) ->
           IO.puts("bad_word: #{current_guess(socket.assigns)}")
-          socket |> assign(:game_state, :bad_word)
+
+          socket
+          |> assign(:game_state, :bad_word)
+          |> push_event("bad-word", %{row: guess_row_id(socket.assigns.current_row)})
 
         true ->
           socket
@@ -58,6 +62,7 @@ defmodule WordleWeb.GameLive do
     {:noreply, socket}
   end
 
+  # Backspace one column
   def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket) do
     socket =
       socket
@@ -91,6 +96,7 @@ defmodule WordleWeb.GameLive do
     {:noreply, socket}
   end
 
+  # Register keyboard press
   def handle_event("keyboard-press", %{"letter" => letter}, socket) do
     IO.puts("letter: #{letter}")
 
@@ -177,6 +183,19 @@ defmodule WordleWeb.GameLive do
 
   defp bad_word?(assigns) do
     current_guess(assigns) |> WordList.bad_word?()
+  end
+
+  defp shake_it_off(js \\ %JS{}, id) do
+    JS.transition(
+      js,
+      "bg-red-100 shake",
+      time: 500,
+      to: "##{id}"
+    )
+  end
+
+  defp guess_row_id(id) do
+    "guess-row-#{id}"
   end
 
   defp current_guess(assigns) do

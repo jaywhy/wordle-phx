@@ -1,5 +1,10 @@
-<%= if @game_state == :won do %>
-  <.won word={@current_word} />
+<%= cond do %>
+  <% @game_state == :won -> %>
+    <.won word={@current_word} />
+  <% @game_state == :lost -> %>
+    <.lost word={@current_word} />
+  <% true -> %>
+     <% nil %>
 <% end %>
 
 <div class="flex flex-col items-center">

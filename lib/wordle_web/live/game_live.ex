@@ -79,14 +79,15 @@ defmodule WordleWeb.GameLive do
     {:noreply, socket}
   end
 
+  # Can't overfill a row. Ignore inputs.
   def handle_event("keyboard-press", _params, socket)
       when socket.assigns.current_column >= 5 do
     {:noreply, socket}
   end
 
-  def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
+  # Game is over. Ignore inputs.
+  def handle_event("keyboard-press", _params, socket)
       when socket.assigns.current_row >= 6 do
-    # Game is done
     {:noreply, socket}
   end
 
@@ -109,6 +110,15 @@ defmodule WordleWeb.GameLive do
     ~H"""
       <div class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
         <h1 class="text-2xl mb-4">You won!</h1>
+      <.new_game />
+      </div>
+    """
+  end
+
+  def lost(assigns) do
+    ~H"""
+      <div class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
+        <h1 class="text-2xl mb-4">You lost!</h1>
       <.new_game />
       </div>
     """
@@ -161,8 +171,8 @@ defmodule WordleWeb.GameLive do
     do: current_guess(assigns) == assigns.current_word
 
   defp game_lost?(assigns) do
-    assigns.current_row >= 6 &&
-      current_guess(assigns) != assigns.current_word
+    IO.inspect(assigns)
+    assigns.current_row >= 5 && !game_won?(assigns)
   end
 
   defp bad_word?(assigns) do
@@ -212,9 +222,5 @@ defmodule WordleWeb.GameLive do
       true ->
         "bg-gray-500 border-gray-500 text-white"
     end
-  end
-
-  defp match_letter(letter) do
-    letter
   end
 end

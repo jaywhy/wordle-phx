@@ -15,7 +15,8 @@ defmodule Wordle.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: Wordle.PubSub},
       # Start the Endpoint (http/https)
-      WordleWeb.Endpoint
+      WordleWeb.Endpoint,
+      Wordle.WordList
       # Start a worker by calling: Wordle.Worker.start_link(arg)
       # {Wordle.Worker, arg}
     ]

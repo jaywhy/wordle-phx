@@ -26,13 +26,23 @@
   <div class="flex">
     <%= for letter <- row do %>
     <div class="flex flex-row">
-      <button
-        class="hover:bg-blue-400 hover:text-white h-16 m-1 font-bold uppercase py-2 px-4 rounded bg-gray-300"
-        phx-click="keyboard-press"
-        phx-value-letter={letter}
-      >
-        <%= match_letter(letter) %>
-      </button>
+    <%= if letter_used?(@letters_used, letter) do %>
+        <button
+          class="h-16 m-1 font-bold uppercase py-2 px-4 rounded bg-red-300"
+          phx-click="keyboard-press"
+          phx-value-letter={letter}
+        >
+          <%= letter %>
+        </button>
+      <% else %>
+        <button
+          class="hover:bg-blue-400 hover:text-white h-16 m-1 font-bold uppercase py-2 px-4 rounded bg-gray-300"
+          phx-click="keyboard-press"
+          phx-value-letter={letter}
+        >
+          <%= letter %>
+        </button>
+      <% end %>
     </div>
     <% end %>
   </div>

@@ -44,6 +44,7 @@ defmodule WordleWeb.GameLive do
 
         true ->
           socket
+          |> assign_current_guess_to_letters_used()
           |> assign(:current_row, socket.assigns.current_row + 1)
           |> assign(:current_column, 0)
       end
@@ -132,6 +133,28 @@ defmodule WordleWeb.GameLive do
     |> assign(:current_column, 0)
     |> assign(:guesses, create_guesses())
     |> assign(:keyboard, create_keyboard())
+    |> assign(:letters_used, MapSet.new())
+  end
+
+  defp letter_used?(letters_used, letter) do
+    letters_used
+    |> MapSet.member?(
+      letter
+      |> to_string()
+      |> String.downcase()
+    )
+  end
+
+  defp assign_current_guess_to_letters_used(socket) do
+    socket
+    |> assign(
+      :letters_used,
+      current_guess(socket.assigns)
+      |> String.downcase()
+      |> String.codepoints()
+      |> MapSet.new()
+      |> MapSet.union(socket.assigns.letters_used)
+    )
   end
 
   defp game_won?(assigns),

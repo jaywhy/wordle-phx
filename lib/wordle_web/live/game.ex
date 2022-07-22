@@ -5,11 +5,11 @@ defmodule WordleWeb.Game do
 
   def board(assigns) do
     ~H"""
-      <%= @guesses |> Enum.with_index |> Enum.map(fn {guess, i} -> %>
-        <.row let={%{letter: letter, column: column}} guess={guess} id={guess_row_id(i)}>
-          <.letter row={i} column={column} letter={letter} current_row={@current_row} current_word={@current_word} />
+      <%= for {row, guess} <- @guesses do %>
+        <.row let={%{letter: letter, column: column}} guess={guess} id={guess_row_id(row)}>
+          <.letter row={row} column={column} letter={letter} current_row={@current_row} current_word={@current_word} />
         </.row>
-      <% end) %>
+      <% end %>
     """
   end
 
@@ -19,9 +19,9 @@ defmodule WordleWeb.Game do
           class="flex"
           data-bad-word={@id |> shake_it_off()}
       >
-        <%= @guess |> Enum.with_index |> Enum.map(fn {letter, j} -> %>
-          <%= render_slot(@inner_block, %{letter: letter, column: j}) %>
-        <% end) %>
+        <%= for {column, letter} <- @guess do %>
+          <%= render_slot(@inner_block, %{letter: letter, column: column}) %>
+        <% end %>
       </div>
     """
   end
@@ -51,7 +51,7 @@ defmodule WordleWeb.Game do
 
   defp letter_classnames(guess, letter, position) do
     cond do
-      guess |> String.at(position) == letter ->
+      guess |> String.at(position - 1) == letter ->
         " bg-green-600 border-green-600 text-white"
 
       guess |> String.contains?(letter) ->

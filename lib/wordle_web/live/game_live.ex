@@ -33,7 +33,7 @@ defmodule WordleWeb.GameLive do
   end
 
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
-      when socket.assigns.current_column >= 5 do
+      when socket.assigns.current_column >= 6 do
     socket =
       cond do
         game_won?(socket.assigns) ->
@@ -55,7 +55,7 @@ defmodule WordleWeb.GameLive do
           socket
           |> assign_current_guess_to_letters_used()
           |> assign(:current_row, socket.assigns.current_row + 1)
-          |> assign(:current_column, 0)
+          |> assign(:current_column, 1)
       end
 
     {:noreply, socket}
@@ -63,7 +63,7 @@ defmodule WordleWeb.GameLive do
 
   # Backspace upto the first column.
   def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket)
-      when socket.assigns.current_column <= 0 do
+      when socket.assigns.current_column <= 1 do
     {:noreply, socket}
   end
 
@@ -85,19 +85,19 @@ defmodule WordleWeb.GameLive do
 
   # Can't hit enter until row is filled.
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
-      when socket.assigns.current_column < 5 do
+      when socket.assigns.current_column < 6 do
     {:noreply, socket}
   end
 
   # Can't overfill a row. Ignore inputs.
   def handle_event("keyboard-press", _params, socket)
-      when socket.assigns.current_column >= 5 do
+      when socket.assigns.current_column >= 6 do
     {:noreply, socket}
   end
 
   # Game is over. Ignore inputs.
   def handle_event("keyboard-press", _params, socket)
-      when socket.assigns.current_row >= 6 do
+      when socket.assigns.current_row >= 7 do
     {:noreply, socket}
   end
 
@@ -121,8 +121,8 @@ defmodule WordleWeb.GameLive do
     socket
     |> assign(:game_state, :new)
     |> assign(:current_word, WordList.random_word())
-    |> assign(:current_row, 0)
-    |> assign(:current_column, 0)
+    |> assign(:current_row, 1)
+    |> assign(:current_column, 1)
     |> assign(:guesses, create_guesses())
     |> assign(:keyboard, create_keyboard())
     |> assign(:letters_used, MapSet.new())
@@ -154,7 +154,7 @@ defmodule WordleWeb.GameLive do
 
   defp game_lost?(assigns) do
     IO.inspect(assigns)
-    assigns.current_row >= 5 && !game_won?(assigns)
+    assigns.current_row >= 6 && !game_won?(assigns)
   end
 
   defp bad_word?(assigns) do
@@ -166,27 +166,22 @@ defmodule WordleWeb.GameLive do
   end
 
   defp current_guess(assigns) do
-    assigns.guesses |> Enum.at(assigns.current_row) |> Enum.join("")
+    assigns.guesses[assigns.current_row] |> Map.values() |> Enum.join("")
   end
 
   defp set_letter(assigns, letter) do
-    guess =
-      assigns.guesses
-      |> Enum.at(assigns.current_row)
-      |> List.replace_at(assigns.current_column, letter)
-
-    assigns.guesses |> List.replace_at(assigns.current_row, guess)
+    put_in(assigns.guesses, [assigns.current_row, assigns.current_column], letter)
   end
 
-  defp create_guesses do
+  def create_guesses do
     guess_amount = 6
     word_length = 5
 
-    for _i <- 1..guess_amount, into: [], do: create_guess(word_length)
+    for i <- 1..guess_amount, into: %{}, do: {i, create_guess(word_length)}
   end
 
   defp create_guess(word_length) do
-    for _i <- 1..word_length, into: [], do: ""
+    for i <- 1..word_length, into: %{}, do: {i, ""}
   end
 
   defp create_keyboard do

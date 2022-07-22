@@ -3,9 +3,12 @@ defmodule WordleWeb.GameLive do
 
   alias Wordle.WordList
   alias Phoenix.LiveView.JS
+  alias Wordle.Server
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Server.subscribe()
+
     socket =
       socket
       |> initialize_game_state
@@ -130,6 +133,18 @@ defmodule WordleWeb.GameLive do
     """
   end
 
+  def letter(assigns) do
+    class_names =
+      "flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase" <>
+        letter_classnames(assigns.word, assigns.letter, assigns.pos)
+
+    ~H"""
+      <div class={class_names}>
+        <%= @letter %>
+      </div>
+    """
+  end
+
   def new_game(assigns) do
     ~H"""
       <button 
@@ -230,16 +245,19 @@ defmodule WordleWeb.GameLive do
     ]
   end
 
+  defp letter_classnames(_guess, "", _), do: ""
+
   defp letter_classnames(guess, letter, position) do
     cond do
       guess |> String.at(position) == letter ->
-        "bg-green-600 border-green-600 text-white"
+        " bg-green-600 border-green-600 text-white"
 
       guess |> String.contains?(letter) ->
-        "bg-yellow-500 border-yellow-500 text-white"
+        IO.inspect(binding())
+        " bg-yellow-500 border-yellow-500 text-white"
 
       true ->
-        "bg-gray-500 border-gray-500 text-white"
+        " bg-gray-500 border-gray-500 text-white"
     end
   end
 end

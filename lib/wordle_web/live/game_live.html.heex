@@ -11,29 +11,19 @@
   <.board guesses={@guesses} current_word={@current_word} current_row={@current_row} />
 </div>
 <div class="flex flex-col items-center">
-  <%= @keyboard |> Enum.with_index |> Enum.map(fn {row, _i} -> %>
+  <%= for row <- @keyboard do %>
   <div class="flex">
     <%= for letter <- row do %>
     <div class="flex flex-row">
-      <%= if letter_used?(@letters_used, letter) do %>
-        <button
-          class="h-16 m-1 font-bold uppercase py-2 px-4 rounded bg-red-300"
-          phx-click="keyboard-press"
-          phx-value-letter={letter}
-        >
-          <%= letter %>
-        </button>
-      <% else %>
-        <button
-          class="hover:bg-blue-400 hover:text-white h-16 m-1 font-bold uppercase py-2 px-4 rounded bg-gray-300"
-          phx-click="keyboard-press"
-          phx-value-letter={letter}
-        >
-          <%= letter %>
-        </button>
-      <% end %>
+      <button
+        class={"h-16 m-1 font-bold uppercase py-2 px-4 rounded#{if letter_used?(@letters_used, letter), do: " bg-red-300", else: " hover:bg-blue-400 hover:text-white bg-gray-300"}"}
+        phx-click="keyboard-press"
+        phx-value-letter={letter}
+      >
+        <%= letter %>
+      </button>
     </div>
     <% end %>
   </div>
-  <% end) %>
+  <% end %>
 </div>

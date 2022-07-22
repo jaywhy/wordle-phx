@@ -8,18 +8,7 @@
 <% end %>
 
 <div id="guesses" class="flex flex-col items-center" phx-hook="BadWord">
-  <%= @guesses |> Enum.with_index |> Enum.map(fn {guess, i} -> %>
-  <div id={guess_row_id(i)}
-      class="flex"
-      data-bad-word={i |> guess_row_id |> shake_it_off()}
-  >
-    <%= guess |> Enum.with_index |> Enum.map(fn {letter, j} -> %>
-      <div class={"#{if i < @current_row, do: letter_classnames(@current_word, letter, j), else: ""} flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase"}>
-        <%= letter %>
-      </div>
-    <% end) %>
-  </div>
-  <% end) %>
+  <.board guesses={@guesses} current_word={@current_word} current_row={@current_row} />
 </div>
 <div class="flex flex-col items-center">
   <%= @keyboard |> Enum.with_index |> Enum.map(fn {row, _i} -> %>

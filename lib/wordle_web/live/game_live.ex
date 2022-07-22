@@ -1,8 +1,9 @@
 defmodule WordleWeb.GameLive do
   use WordleWeb, :live_view
 
+  import WordleWeb.Game
+
   alias Wordle.WordList
-  alias Phoenix.LiveView.JS
   alias Wordle.Server
 
   @impl true
@@ -133,18 +134,6 @@ defmodule WordleWeb.GameLive do
     """
   end
 
-  def letter(assigns) do
-    class_names =
-      "flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase" <>
-        letter_classnames(assigns.word, assigns.letter, assigns.pos)
-
-    ~H"""
-      <div class={class_names}>
-        <%= @letter %>
-      </div>
-    """
-  end
-
   def new_game(assigns) do
     ~H"""
       <button 
@@ -200,15 +189,6 @@ defmodule WordleWeb.GameLive do
     current_guess(assigns) |> WordList.bad_word?()
   end
 
-  defp shake_it_off(js \\ %JS{}, id) do
-    JS.transition(
-      js,
-      "bg-red-100 shake",
-      time: 500,
-      to: "##{id}"
-    )
-  end
-
   defp guess_row_id(id) do
     "guess-row-#{id}"
   end
@@ -243,21 +223,5 @@ defmodule WordleWeb.GameLive do
       ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
       ['Enter', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Backspace']
     ]
-  end
-
-  defp letter_classnames(_guess, "", _), do: ""
-
-  defp letter_classnames(guess, letter, position) do
-    cond do
-      guess |> String.at(position) == letter ->
-        " bg-green-600 border-green-600 text-white"
-
-      guess |> String.contains?(letter) ->
-        IO.inspect(binding())
-        " bg-yellow-500 border-yellow-500 text-white"
-
-      true ->
-        " bg-gray-500 border-gray-500 text-white"
-    end
   end
 end

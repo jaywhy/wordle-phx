@@ -8,6 +8,32 @@ defmodule WordleWeb.GameLiveTest do
 
   import Phoenix.LiveViewTest
 
+  describe "keyboard" do
+    test "colors keys green when in the right position" do
+    end
+  end
+
+  describe "pressing backspace" do
+    test "deletes a character", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      view
+      |> press_key("a")
+      |> press_backspace()
+
+      refute has_element?(view, "#letter-1-1", "a")
+    end
+
+    test "doesn't work if nothing is there", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      view
+      |> press_backspace()
+
+      refute has_element?(view, "#letter-1-0")
+    end
+  end
+
   test "adds letters to board", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/")
 
@@ -30,144 +56,131 @@ defmodule WordleWeb.GameLiveTest do
     refute has_element?(view, "#guess-row-1", ~r/z/)
   end
 
-  test "pressing backspace deletes a character", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
+  describe "pressing enter" do
+    test "without a full row doesn't work", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
 
-    view
-    |> press_key("a")
-    |> press_backspace()
+      view
+      |> press_keys("hell")
+      |> press_enter()
+      |> press_key("o")
 
-    refute has_element?(view, "#letter-1-1", "a")
+      assert has_element?(view, "#guess-row-1", ~r/o/)
+      refute has_element?(view, "#letter-2-1", ~r/o/)
+    end
+
+    test "with good word goes to next row", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      view
+      |> press_keys("hello")
+      |> press_enter()
+      |> press_keys("a")
+
+      assert has_element?(view, "#guess-row-2", ~r/a/)
+    end
+
+    test "with a bad word doesn't work", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      view
+      |> press_keys("aaaaa")
+      |> press_enter()
+      |> press_keys("a")
+
+      refute has_element?(view, "#guess-row-2", ~r/a/)
+    end
+
+    test "with a bad word pushs an event", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      view
+      |> press_keys("aaaaa")
+      |> press_enter()
+
+      assert_push_event(view, "bad-word", %{row: "guess-row-1"})
+    end
   end
 
-  test "pressing backspace doesn't work if nothing is there", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
+  describe "letter are colored" do
+    test "green when in the right position", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-    view
-    |> press_backspace()
+      view
+      |> press_keys("hello")
+      |> press_enter()
 
-    refute has_element?(view, "#letter-1-0")
+      assert has_element?(view, "#letter-1-1.bg-green-600")
+    end
+
+    test "yellow when the letter is present but in the wrong position", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view
+      |> press_keys("loser")
+      |> press_enter()
+
+      assert has_element?(view, "#letter-1-1.bg-yellow-500")
+      assert has_element?(view, "#letter-1-2.bg-yellow-500")
+      assert has_element?(view, "#letter-1-4.bg-yellow-500")
+    end
+
+    test "gray when it's not a match", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view
+      |> press_keys("abash")
+      |> press_enter()
+
+      assert has_element?(view, "#letter-1-1.bg-gray-500")
+      assert has_element?(view, "#letter-1-2.bg-gray-500")
+      assert has_element?(view, "#letter-1-3.bg-gray-500")
+      assert has_element?(view, "#letter-1-4.bg-gray-500")
+    end
   end
 
-  test "pressing enter without a full row doesn't work", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
+  describe "screen" do
+    test "tells you when you've won", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-    view
-    |> press_keys("hell")
-    |> press_enter()
-    |> press_key("o")
+      view
+      |> press_keys("hello")
+      |> press_enter()
 
-    assert has_element?(view, "#guess-row-1", ~r/o/)
-    refute has_element?(view, "#letter-2-1", ~r/o/)
-  end
+      assert has_element?(view, "#screen > h1", "won")
+      assert has_new_game?(view)
+    end
 
-  test "letters are green when in the right position", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?test-word=hello")
+    test "when you win it colors the last row of letters", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-    view
-    |> press_keys("hello")
-    |> press_enter()
+      view
+      |> press_keys("hello")
+      |> press_enter()
 
-    assert has_element?(view, "#letter-1-1.bg-green-600")
-  end
+      assert has_element?(view, "#letter-1-1.bg-green-600")
+      assert has_element?(view, "#letter-1-2.bg-green-600")
+      assert has_element?(view, "#letter-1-3.bg-green-600")
+      assert has_element?(view, "#letter-1-4.bg-green-600")
+      assert has_element?(view, "#letter-1-5.bg-green-600")
+    end
 
-  test "letters are yellow when the letter is present but in the wrong position", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?test-word=hello")
+    test "tells you when you've lost", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-    view
-    |> press_keys("loser")
-    |> press_enter()
+      view |> lose_game("abash")
 
-    assert has_element?(view, "#letter-1-1.bg-yellow-500")
-    assert has_element?(view, "#letter-1-2.bg-yellow-500")
-    assert has_element?(view, "#letter-1-4.bg-yellow-500")
-  end
+      assert has_element?(view, "#screen > h1", "lost")
+      assert has_new_game?(view)
+    end
 
-  test "letters are gray when it's not a match", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?test-word=hello")
+    test "when you lose it still colors the last row of letters", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-    view
-    |> press_keys("abash")
-    |> press_enter()
+      view |> lose_game("abash")
 
-    assert has_element?(view, "#letter-1-1.bg-gray-500")
-    assert has_element?(view, "#letter-1-2.bg-gray-500")
-    assert has_element?(view, "#letter-1-3.bg-gray-500")
-    assert has_element?(view, "#letter-1-4.bg-gray-500")
-  end
-
-  test "tells you when you've won", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?test-word=hello")
-
-    view
-    |> press_keys("hello")
-    |> press_enter()
-
-    assert has_element?(view, "#screen > h1", "won")
-    assert has_new_game?(view)
-  end
-
-  test "when you win it colors the last row of letters", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?test-word=hello")
-
-    view
-    |> press_keys("hello")
-    |> press_enter()
-
-    assert has_element?(view, "#letter-1-1.bg-green-600")
-    assert has_element?(view, "#letter-1-2.bg-green-600")
-    assert has_element?(view, "#letter-1-3.bg-green-600")
-    assert has_element?(view, "#letter-1-4.bg-green-600")
-    assert has_element?(view, "#letter-1-5.bg-green-600")
-  end
-
-  test "tells you when you've lost", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?test-word=hello")
-
-    view |> lose_game("abash")
-
-    assert has_element?(view, "#screen > h1", "lost")
-    assert has_new_game?(view)
-  end
-
-  test "when you lose it still colors the last row of letters", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?test-word=hello")
-
-    view |> lose_game("abash")
-
-    assert has_element?(view, "#letter-6-5.bg-yellow-500")
-  end
-
-  test "pressing enter with good word goes to next row", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
-
-    view
-    |> press_keys("hello")
-    |> press_enter()
-    |> press_keys("a")
-
-    assert has_element?(view, "#guess-row-2", ~r/a/)
-  end
-
-  test "pressing enter with a bad word doesn't work", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
-
-    view
-    |> press_keys("aaaaa")
-    |> press_enter()
-    |> press_keys("a")
-
-    refute has_element?(view, "#guess-row-2", ~r/a/)
-  end
-
-  test "pressing enter with a bad word pushs an event", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
-
-    view
-    |> press_keys("aaaaa")
-    |> press_enter()
-
-    assert_push_event(view, "bad-word", %{row: "guess-row-1"})
+      assert has_element?(view, "#letter-6-5.bg-yellow-500")
+    end
   end
 
   defp has_new_game?(view) do

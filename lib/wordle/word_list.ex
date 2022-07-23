@@ -3,9 +3,7 @@ defmodule Wordle.WordList do
   @word_list_path "priv/word-list.txt"
 
   @word_list Wordle.LoadWordList.load(@allowed_list_path)
-  @allowed_list @word_list_path
-                |> File.stream!()
-                |> Map.new(&{&1 |> String.trim(), true})
+  @allowed_list Wordle.LoadWordList.load(@word_list_path)
 
   def random_word() do
     @word_list |> Enum.random() |> elem(0)

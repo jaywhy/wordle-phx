@@ -16,11 +16,11 @@
     <%= for letter <- row do %>
     <div class="flex flex-row">
       <button
-        class={"h-16 m-1 font-bold uppercase py-2 px-4 rounded#{if letter_used?(@letters_used, letter), do: " bg-red-300", else: " hover:bg-blue-400 hover:text-white bg-gray-300"}"}
+        class={"h-14 text-sm m-0.5 px-2.5 md:px-4 md:p-3 md:h-16 md:text-base md:m-1 font-bold uppercase rounded#{if letter_used?(@letters_used, letter), do: " bg-red-300", else: " hover:bg-blue-400 hover:text-white bg-gray-300"}"}
         phx-click="keyboard-press"
         phx-value-letter={letter}
       >
-        <%= letter %>
+        <.letter letter={letter} />
       </button>
     </div>
     <% end %>

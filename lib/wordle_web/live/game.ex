@@ -28,7 +28,7 @@ defmodule WordleWeb.Game do
 
   defp letter(assigns) do
     ~H"""
-      <div id={"letter-#{@row}-#{@column}"} class={"#{if @row < @current_row, do: letter_classnames(@current_word, @letter, @column), else: ""} flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase"}>
+      <div id={"letter-#{@row}-#{@column}"} class={"#{if @row < @current_row, do: letter_classnames(@current_word, @letter, @column), else: " border-gray-300"} flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase"}>
         <%= @letter %>
       </div>
     """

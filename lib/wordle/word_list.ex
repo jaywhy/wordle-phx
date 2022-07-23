@@ -2,8 +2,8 @@ defmodule Wordle.WordList do
   @allowed_list_path "priv/allowed-list.txt"
   @word_list_path "priv/word-list.txt"
 
-  @word_list Wordle.LoadWordList.load(@allowed_list_path)
-  @allowed_list Wordle.LoadWordList.load(@word_list_path)
+  @word_list Wordle.LoadWordList.load(@word_list_path)
+  @allowed_list Wordle.LoadWordList.load(@allowed_list_path)
 
   def random_word() do
     @word_list |> Enum.random() |> elem(0)

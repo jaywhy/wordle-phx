@@ -19,6 +19,15 @@ defmodule WordleWeb.GameLive do
   end
 
   @impl true
+  def handle_params(%{"test-word" => word}, _url, socket) do
+    {:noreply, assign(socket, :current_word, word)}
+  end
+
+  def handle_params(_params, _url, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("reset", _, socket) do
     socket =
       socket
@@ -42,11 +51,11 @@ defmodule WordleWeb.GameLive do
           |> assign(:current_row, socket.assigns.current_row + 1)
 
         game_lost?(socket.assigns) ->
-          socket |> assign(:game_state, :lost)
+          socket
+          |> assign(:game_state, :lost)
+          |> assign(:current_row, socket.assigns.current_row + 1)
 
         bad_word?(socket.assigns) ->
-          IO.puts("bad_word: #{current_guess(socket.assigns)}")
-
           socket
           |> assign(:game_state, :bad_word)
           |> push_event("bad-word", %{row: guess_row_id(socket.assigns.current_row)})
@@ -103,8 +112,6 @@ defmodule WordleWeb.GameLive do
 
   # Register keyboard press
   def handle_event("keyboard-press", %{"letter" => letter}, socket) do
-    IO.puts("letter: #{letter}")
-
     socket =
       socket
       |> assign(
@@ -113,7 +120,6 @@ defmodule WordleWeb.GameLive do
       )
       |> assign(:current_column, socket.assigns.current_column + 1)
 
-    IO.inspect(socket.assigns)
     {:noreply, socket}
   end
 
@@ -153,7 +159,6 @@ defmodule WordleWeb.GameLive do
     do: current_guess(assigns) == assigns.current_word
 
   defp game_lost?(assigns) do
-    IO.inspect(assigns)
     assigns.current_row >= 6 && !game_won?(assigns)
   end
 

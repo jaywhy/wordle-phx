@@ -3,7 +3,7 @@ defmodule WordleWeb.Screens do
 
   def won(assigns) do
     ~H"""
-      <div class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
+      <div id="screen" class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
         <h1 class="text-2xl mb-4">You won!</h1>
       <.new_game />
       </div>
@@ -12,7 +12,7 @@ defmodule WordleWeb.Screens do
 
   def lost(assigns) do
     ~H"""
-      <div class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
+      <div id="screen" class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
         <h1 class="text-2xl mb-4">You lost!</h1>
       <.new_game />
       </div>

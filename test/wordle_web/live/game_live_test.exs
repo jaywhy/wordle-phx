@@ -68,8 +68,7 @@ defmodule WordleWeb.GameLiveTest do
     test "doesn't work if nothing is there", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      view
-      |> press_backspace()
+      view |> press_backspace()
 
       refute has_element?(view, "#letter-1-0")
     end
@@ -78,8 +77,7 @@ defmodule WordleWeb.GameLiveTest do
   test "adds letters to board", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/")
 
-    view
-    |> press_keys("hello")
+    view |> press_keys("hello")
 
     assert has_element?(view, "#letter-1-1", "h")
     assert has_element?(view, "#letter-1-2", "e")

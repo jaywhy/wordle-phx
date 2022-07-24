@@ -5,7 +5,7 @@ defmodule WordleWeb.Screens do
     ~H"""
       <div id="screen" class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
         <h1 class="text-2xl mb-4">You won!</h1>
-      <.new_game />
+        <.new_game />
       </div>
     """
   end
@@ -14,7 +14,8 @@ defmodule WordleWeb.Screens do
     ~H"""
       <div id="screen" class="fixed w-96 opacity-95 text-center p-10 mx-auto justify-center rounded-xl border z-20 rounded border-gray-500 bg-white">
         <h1 class="text-2xl mb-4">You lost!</h1>
-      <.new_game />
+        <p class="mb-1"> The correct word was <span class="font-bold"><%= @word %></span></p>
+        <.new_game />
       </div>
     """
   end

@@ -9,7 +9,34 @@ defmodule WordleWeb.GameLiveTest do
   import Phoenix.LiveViewTest
 
   describe "keyboard" do
-    test "colors keys green when in the right position" do
+    test "keys are green when guess is in the right position", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view
+      |> press_keys("habit")
+      |> press_enter()
+
+      assert has_element?(view, "#key-h > button.bg-green-500")
+    end
+
+    test "keys are yellow when letter is in the word but not in the right position", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view
+      |> press_keys("abash")
+      |> press_enter()
+
+      assert has_element?(view, "#key-h > button.bg-yellow-500")
+    end
+
+    test "keys are dark gray when letter isn't in the word and has been used", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view
+      |> press_keys("abash")
+      |> press_enter()
+
+      assert has_element?(view, "#key-a > button.bg-gray-500")
     end
   end
 
@@ -164,8 +191,10 @@ defmodule WordleWeb.GameLiveTest do
       assert has_element?(view, "#letter-1-4.bg-green-600")
       assert has_element?(view, "#letter-1-5.bg-green-600")
     end
+  end
 
-    test "tells you when you've lost", %{conn: conn} do
+  describe "when you lose" do
+    test "tells you when you've lose", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
       view |> lose_game("abash")
@@ -174,12 +203,20 @@ defmodule WordleWeb.GameLiveTest do
       assert has_new_game?(view)
     end
 
-    test "when you lose it still colors the last row of letters", %{conn: conn} do
+    test "still colors the last row of letters", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
       view |> lose_game("abash")
 
       assert has_element?(view, "#letter-6-5.bg-yellow-500")
+    end
+
+    test "tells you the correct word", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view |> lose_game("abash")
+
+      assert has_element?(view, "#screen", "hello")
     end
   end
 

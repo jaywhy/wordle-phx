@@ -14,13 +14,13 @@
   <%= for row <- @keyboard do %>
   <div class="flex">
     <%= for letter <- row do %>
-    <div class="flex flex-row">
+    <div id={"key-#{letter}"} class="flex flex-row">
       <button
-        class={"h-14 text-sm m-0.5 px-2.5 md:px-4 md:p-3 md:h-16 md:text-base md:m-1 font-bold uppercase rounded#{if letter_used?(@letters_used, letter), do: " bg-red-300", else: " hover:bg-blue-400 hover:text-white bg-gray-300"}"}
+        class={key_classnames(@letters_used, letter)}
         phx-click="keyboard-press"
         phx-value-letter={letter}
       >
-        <.letter letter={letter} />
+        <.key letter={letter} />
       </button>
     </div>
     <% end %>

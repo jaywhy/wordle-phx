@@ -131,28 +131,43 @@ defmodule WordleWeb.GameLive do
     |> assign(:current_column, 1)
     |> assign(:guesses, create_guesses())
     |> assign(:keyboard, create_keyboard())
-    |> assign(:letters_used, MapSet.new())
-  end
-
-  defp letter_used?(letters_used, letter) do
-    letters_used
-    |> MapSet.member?(
-      letter
-      |> to_string()
-      |> String.downcase()
-    )
+    |> assign(:letters_used, create_letters_used())
   end
 
   defp assign_current_guess_to_letters_used(socket) do
     socket
     |> assign(
       :letters_used,
-      current_guess(socket.assigns)
-      |> String.downcase()
-      |> String.codepoints()
-      |> MapSet.new()
-      |> MapSet.union(socket.assigns.letters_used)
+      update_letters_used(
+        socket.assigns.letters_used,
+        current_guess(socket.assigns),
+        socket.assigns.current_word
+      )
     )
+  end
+
+  def update_letters_used(letters_used, current_guess, current_word) do
+    current_guess
+    |> String.codepoints()
+    |> Enum.with_index()
+    |> Enum.reduce(letters_used, fn {key, position}, letters_used ->
+      letters_used
+      |> Map.update!(key, fn existing_value ->
+        cond do
+          existing_value == :match ->
+            :match
+
+          current_word |> String.at(position) == key ->
+            :match
+
+          current_word |> String.contains?(key) ->
+            :contains
+
+          true ->
+            :used
+        end
+      end)
+    end)
   end
 
   defp game_won?(assigns),
@@ -171,14 +186,14 @@ defmodule WordleWeb.GameLive do
   end
 
   defp current_guess(assigns) do
-    assigns.guesses[assigns.current_row] |> Map.values() |> Enum.join("")
+    assigns.guesses[assigns.current_row] |> Map.values() |> Enum.join("") |> String.downcase()
   end
 
   defp set_letter(assigns, letter) do
     put_in(assigns.guesses, [assigns.current_row, assigns.current_column], letter)
   end
 
-  defp letter(%{letter: 'Backspace'} = assigns) do
+  defp key(%{letter: 'Backspace'} = assigns) do
     ~H"""
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
@@ -186,10 +201,33 @@ defmodule WordleWeb.GameLive do
     """
   end
 
-  defp letter(assigns) do
+  defp key(assigns) do
     ~H"""
     <%= assigns.letter %>
     """
+  end
+
+  defp key_classnames(letters_used, letter) do
+    classnames =
+      case letters_used[letter] do
+        :match ->
+          "bg-green-500 text-white "
+
+        :used ->
+          "bg-gray-500 text-white "
+
+        :contains ->
+          "bg-yellow-500 text-white "
+
+        :unused ->
+          "bg-gray-200 "
+
+        _ ->
+          "bg-gray-200 "
+      end
+
+    classnames <>
+      "h-14 text-sm m-0.5 px-2.5 md:px-4 md:p-3 md:h-16 md:text-base md:m-1 font-bold uppercase rounded"
   end
 
   def create_guesses do
@@ -205,9 +243,17 @@ defmodule WordleWeb.GameLive do
 
   defp create_keyboard do
     [
-      ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-      ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-      ['Enter', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Backspace']
+      ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+      ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+      ["Enter", "z", "x", "c", "v", "b", "n", "m", "Backspace"]
     ]
+  end
+
+  defp create_letters_used do
+    ?a..?z
+    |> Enum.to_list()
+    |> List.to_string()
+    |> String.codepoints()
+    |> Map.new(&{&1, :unused})
   end
 end

@@ -52,13 +52,13 @@ defmodule WordleWeb.Game do
   defp letter_classnames(guess, letter, position) do
     cond do
       guess |> String.at(position - 1) == letter ->
-        " bg-green-600 border-green-600 text-white"
+        " bg-green-600 text-white"
 
       guess |> String.contains?(letter) ->
-        " bg-yellow-500 border-yellow-500 text-white"
+        " bg-yellow-500 text-white"
 
       true ->
-        " bg-gray-500 border-gray-500 text-white"
+        " bg-gray-500 text-white"
     end
   end
 end

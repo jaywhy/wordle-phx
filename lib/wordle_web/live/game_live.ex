@@ -234,7 +234,7 @@ defmodule WordleWeb.GameLive do
       end
 
     classnames <>
-      "h-14 text-sm m-0.5 px-2.5 md:px-4 md:p-3 md:h-16 md:text-base md:m-1 font-bold uppercase rounded"
+      "h-14 text-sm m-0.5 px-2.5 md:px-4 md:p-3 md:h-16 md:text-base md:m-1 font-bold uppercase rounded touch-manipulation"
   end
 
   def create_guesses do

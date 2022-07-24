@@ -7,7 +7,7 @@
      <% nil %>
 <% end %>
 
-<div id="guesses" class="flex flex-col items-center" phx-hook="BadWord">
+<div id="guesses" phx-update="append" class="flex flex-col items-center" phx-hook="BadWord">
   <.board guesses={@guesses} current_word={@current_word} current_row={@current_row} />
 </div>
 <div class="flex flex-col items-center">

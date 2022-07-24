@@ -12,9 +12,7 @@ defmodule WordleWeb.GameLiveTest do
     test "keys are green when guess is in the right position", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("habit")
-      |> press_enter()
+      view |> insert_guess("habit")
 
       assert has_element?(view, "#key-h > button.bg-green-500")
     end
@@ -22,9 +20,7 @@ defmodule WordleWeb.GameLiveTest do
     test "keys are yellow when letter is in the word but not in the right position", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("abash")
-      |> press_enter()
+      view |> insert_guess("abash")
 
       assert has_element?(view, "#key-h > button.bg-yellow-500")
     end
@@ -32,11 +28,29 @@ defmodule WordleWeb.GameLiveTest do
     test "keys are dark gray when letter isn't in the word and has been used", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("abash")
-      |> press_enter()
+      view |> insert_guess("abash")
 
       assert has_element?(view, "#key-a > button.bg-gray-500")
+    end
+
+    test "keys can change color from yellow to green", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view
+      |> insert_guess("abash")
+      |> insert_guess("habit")
+
+      assert has_element?(view, "#key-h > button.bg-green-500")
+    end
+
+    test "keys can't change color from green to yellow", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?test-word=hello")
+
+      view
+      |> insert_guess("habit")
+      |> insert_guess("abash")
+
+      assert has_element?(view, "#key-h > button.bg-green-500")
     end
   end
 
@@ -88,8 +102,7 @@ defmodule WordleWeb.GameLiveTest do
       {:ok, view, _html} = live(conn, "/")
 
       view
-      |> press_keys("hell")
-      |> press_enter()
+      |> insert_guess("hell")
       |> press_key("o")
 
       assert has_element?(view, "#guess-row-1", ~r/o/)
@@ -100,8 +113,7 @@ defmodule WordleWeb.GameLiveTest do
       {:ok, view, _html} = live(conn, "/")
 
       view
-      |> press_keys("hello")
-      |> press_enter()
+      |> insert_guess("hello")
       |> press_keys("a")
 
       assert has_element?(view, "#guess-row-2", ~r/a/)
@@ -111,8 +123,7 @@ defmodule WordleWeb.GameLiveTest do
       {:ok, view, _html} = live(conn, "/")
 
       view
-      |> press_keys("aaaaa")
-      |> press_enter()
+      |> insert_guess("aaaaa")
       |> press_keys("a")
 
       refute has_element?(view, "#guess-row-2", ~r/a/)
@@ -121,9 +132,7 @@ defmodule WordleWeb.GameLiveTest do
     test "with a bad word pushs an event", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      view
-      |> press_keys("aaaaa")
-      |> press_enter()
+      view |> insert_guess("aaaaa")
 
       assert_push_event(view, "bad-word", %{row: "guess-row-1"})
     end
@@ -133,9 +142,7 @@ defmodule WordleWeb.GameLiveTest do
     test "green when in the right position", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("hello")
-      |> press_enter()
+      view |> insert_guess("hello")
 
       assert has_element?(view, "#letter-1-1.bg-green-600")
     end
@@ -143,9 +150,7 @@ defmodule WordleWeb.GameLiveTest do
     test "yellow when the letter is present but in the wrong position", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("loser")
-      |> press_enter()
+      view |> insert_guess("loser")
 
       assert has_element?(view, "#letter-1-1.bg-yellow-500")
       assert has_element?(view, "#letter-1-2.bg-yellow-500")
@@ -155,9 +160,7 @@ defmodule WordleWeb.GameLiveTest do
     test "gray when it's not a match", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("abash")
-      |> press_enter()
+      view |> insert_guess("abash")
 
       assert has_element?(view, "#letter-1-1.bg-gray-500")
       assert has_element?(view, "#letter-1-2.bg-gray-500")
@@ -170,9 +173,7 @@ defmodule WordleWeb.GameLiveTest do
     test "tells you when you've won", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("hello")
-      |> press_enter()
+      view |> insert_guess("hello")
 
       assert has_element?(view, "#screen > h1", "won")
       assert has_new_game?(view)
@@ -181,9 +182,7 @@ defmodule WordleWeb.GameLiveTest do
     test "when you win it colors the last row of letters", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/?test-word=hello")
 
-      view
-      |> press_keys("hello")
-      |> press_enter()
+      view |> insert_guess("hello")
 
       assert has_element?(view, "#letter-1-1.bg-green-600")
       assert has_element?(view, "#letter-1-2.bg-green-600")
@@ -226,17 +225,17 @@ defmodule WordleWeb.GameLiveTest do
 
   defp lose_game(view, word) do
     view
-    |> press_keys(word)
-    |> press_enter()
-    |> press_keys(word)
-    |> press_enter()
-    |> press_keys(word)
-    |> press_enter()
-    |> press_keys(word)
-    |> press_enter()
-    |> press_keys(word)
-    |> press_enter()
-    |> press_keys(word)
+    |> insert_guess(word)
+    |> insert_guess(word)
+    |> insert_guess(word)
+    |> insert_guess(word)
+    |> insert_guess(word)
+    |> insert_guess(word)
+  end
+
+  defp insert_guess(view, guess) do
+    view
+    |> press_keys(guess)
     |> press_enter()
   end
 

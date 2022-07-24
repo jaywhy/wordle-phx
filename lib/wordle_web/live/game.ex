@@ -6,16 +6,24 @@ defmodule WordleWeb.Game do
   def board(assigns) do
     ~H"""
       <%= for {row, guess} <- @guesses do %>
-        <.row let={%{letter: letter, column: column}} guess={guess} id={guess_row_id(row)}>
-          <.letter row={row} column={column} letter={letter} current_row={@current_row} current_word={@current_word} />
-        </.row>
+      <div id={"guess-row-#{row}"}
+          class="flex"
+        phx-update="append"
+          data-bad-word={row |> shake_it_off()}
+      >
+        <%= for {column, letter} <- guess do %>
+          <div id={"letter-#{row}-#{column}"} class={"#{if row < @current_row, do: letter_classnames(@current_word, letter, column), else: " border-gray-300"} flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase"}>
+            <%= letter %>
+          </div>
+        <% end %>
+        </div>
       <% end %>
     """
   end
 
   defp row(assigns) do
     ~H"""
-      <div id={@id}
+      <div id={"guess-row-#{@id}"}
           class="flex"
           data-bad-word={@id |> shake_it_off()}
       >

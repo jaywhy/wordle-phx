@@ -15,7 +15,7 @@ defmodule WordleWeb.GameLive do
       socket
       |> initialize_game_state
 
-    {:ok, socket}
+    {:ok, socket, temporary_assigns: [guesses: %{}]}
   end
 
   @impl true
@@ -48,14 +48,14 @@ defmodule WordleWeb.GameLive do
         game_won?(socket.assigns) ->
           socket
           |> assign(:game_state, :won)
-          |> assign(:current_row, socket.assigns.current_row + 1)
+          |> assign_carriage_return
 
         game_lost?(socket.assigns) ->
           socket
           |> assign(:game_state, :lost)
-          |> assign(:current_row, socket.assigns.current_row + 1)
+          |> assign_carriage_return
 
-        bad_word?(socket.assigns) ->
+        bad_word?(socket.assigns.current_guess) ->
           socket
           |> assign(:game_state, :bad_word)
           |> push_event("bad-word", %{row: guess_row_id(socket.assigns.current_row)})
@@ -63,7 +63,7 @@ defmodule WordleWeb.GameLive do
         true ->
           socket
           |> assign_current_guess_to_letters_used()
-          |> assign(:current_row, socket.assigns.current_row + 1)
+          |> assign_carriage_return()
           |> assign(:current_column, 1)
       end
 
@@ -78,18 +78,7 @@ defmodule WordleWeb.GameLive do
 
   # Backspace one column
   def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket) do
-    socket =
-      socket
-      |> assign(:current_column, socket.assigns.current_column - 1)
-
-    socket =
-      socket
-      |> assign(
-        :guesses,
-        set_letter(socket.assigns, "")
-      )
-
-    {:noreply, socket}
+    {:noreply, remove_letter(socket)}
   end
 
   # Can't hit enter until row is filled.
@@ -112,21 +101,47 @@ defmodule WordleWeb.GameLive do
 
   # Register keyboard press
   def handle_event("keyboard-press", %{"letter" => letter}, socket) do
-    socket =
-      socket
-      |> assign(
-        :guesses,
-        set_letter(socket.assigns, letter)
-      )
-      |> assign(:current_column, socket.assigns.current_column + 1)
+    {:noreply, add_letter(socket, letter)}
+  end
 
-    {:noreply, socket}
+  defp assign_carriage_return(socket) do
+    socket
+    |> assign(:current_guess, "")
+    |> assign(:guesses, %{
+      socket.assigns.current_row => rerender_row(socket.assigns.current_guess)
+    })
+    |> assign(:current_row, socket.assigns.current_row + 1)
+  end
+
+  defp rerender_row(current_guess) do
+    for {x, i} <- current_guess |> String.codepoints() |> Enum.with_index(),
+        into: %{},
+        do: {i + 1, x}
+  end
+
+  defp add_letter(socket, letter) do
+    socket
+    |> assign(:guesses, %{
+      socket.assigns.current_row => %{socket.assigns.current_column => letter}
+    })
+    |> assign(:current_guess, socket.assigns.current_guess <> letter)
+    |> assign(:current_column, socket.assigns.current_column + 1)
+  end
+
+  defp remove_letter(socket) do
+    socket
+    |> assign(:guesses, %{
+      socket.assigns.current_row => %{(socket.assigns.current_column - 1) => ""}
+    })
+    |> assign(:current_column, socket.assigns.current_column - 1)
+    |> assign(:current_guess, socket.assigns.current_guess |> String.slice(0..-2))
   end
 
   defp initialize_game_state(socket) do
     socket
     |> assign(:game_state, :new)
     |> assign(:current_word, WordList.random_word())
+    |> assign(:current_guess, "")
     |> assign(:current_row, 1)
     |> assign(:current_column, 1)
     |> assign(:guesses, create_guesses())
@@ -140,7 +155,7 @@ defmodule WordleWeb.GameLive do
       :letters_used,
       update_letters_used(
         socket.assigns.letters_used,
-        current_guess(socket.assigns),
+        socket.assigns.current_guess,
         socket.assigns.current_word
       )
     )
@@ -171,26 +186,18 @@ defmodule WordleWeb.GameLive do
   end
 
   defp game_won?(assigns),
-    do: current_guess(assigns) == assigns.current_word
+    do: assigns.current_guess == assigns.current_word
 
   defp game_lost?(assigns) do
     assigns.current_row >= 6 && !game_won?(assigns)
   end
 
-  defp bad_word?(assigns) do
-    current_guess(assigns) |> WordList.bad_word?()
+  defp bad_word?(current_guess) do
+    WordList.bad_word?(current_guess)
   end
 
   defp guess_row_id(id) do
     "guess-row-#{id}"
-  end
-
-  defp current_guess(assigns) do
-    assigns.guesses[assigns.current_row] |> Map.values() |> Enum.join("") |> String.downcase()
-  end
-
-  defp set_letter(assigns, letter) do
-    put_in(assigns.guesses, [assigns.current_row, assigns.current_column], letter)
   end
 
   defp key(%{letter: 'Backspace'} = assigns) do

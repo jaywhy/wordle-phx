@@ -3,7 +3,9 @@ defmodule Wordle.Server do
     Phoenix.PubSub.subscribe(Wordle.PubSub, "game")
   end
 
+  def broadcast(event), do: Phoenix.PubSub.broadcast(Wordle.PubSub, "game", {event})
+
   def broadcast(event, payload) do
-    Phoenix.PubSub.broadcast(Wordle.PubSub, "game", event, payload)
+    Phoenix.PubSub.broadcast(Wordle.PubSub, "game", {event, payload})
   end
 end

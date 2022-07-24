@@ -29,10 +29,7 @@ defmodule WordleWeb.GameLive do
 
   @impl true
   def handle_event("reset", _, socket) do
-    socket =
-      socket
-      |> initialize_game_state()
-
+    Wordle.Server.broadcast(:reset)
     {:noreply, socket}
   end
 
@@ -43,6 +40,56 @@ defmodule WordleWeb.GameLive do
 
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
       when socket.assigns.current_column >= 6 do
+    Wordle.Server.broadcast(:enter)
+    {:noreply, socket}
+  end
+
+  # Backspace upto the first column.
+  def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket)
+      when socket.assigns.current_column <= 1 do
+    {:noreply, socket}
+  end
+
+  # Backspace one column
+  def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket) do
+    Wordle.Server.broadcast(:remove_letter)
+    {:noreply, socket}
+  end
+
+  # Can't hit enter until row is filled.
+  def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
+      when socket.assigns.current_column < 6 do
+    {:noreply, socket}
+  end
+
+  # Can't overfill a row. Ignore inputs.
+  def handle_event("keyboard-press", _params, socket)
+      when socket.assigns.current_column >= 6 do
+    {:noreply, socket}
+  end
+
+  # Game is over. Ignore inputs.
+  def handle_event("keyboard-press", _params, socket)
+      when socket.assigns.current_row >= 7 do
+    {:noreply, socket}
+  end
+
+  # Register keyboard press
+  def handle_event("keyboard-press", %{"letter" => letter}, socket) do
+    Wordle.Server.broadcast(:add_letter, letter)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:add_letter, letter}, socket) do
+    {:noreply, add_letter(socket, letter)}
+  end
+
+  def handle_info({:remove_letter}, socket) do
+    {:noreply, remove_letter(socket)}
+  end
+
+  def handle_info({:enter}, socket) do
     socket =
       cond do
         game_won?(socket.assigns) ->
@@ -70,38 +117,12 @@ defmodule WordleWeb.GameLive do
     {:noreply, socket}
   end
 
-  # Backspace upto the first column.
-  def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket)
-      when socket.assigns.current_column <= 1 do
+  def handle_info({:reset}, socket) do
+    socket =
+      socket
+      |> initialize_game_state()
+
     {:noreply, socket}
-  end
-
-  # Backspace one column
-  def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket) do
-    {:noreply, remove_letter(socket)}
-  end
-
-  # Can't hit enter until row is filled.
-  def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
-      when socket.assigns.current_column < 6 do
-    {:noreply, socket}
-  end
-
-  # Can't overfill a row. Ignore inputs.
-  def handle_event("keyboard-press", _params, socket)
-      when socket.assigns.current_column >= 6 do
-    {:noreply, socket}
-  end
-
-  # Game is over. Ignore inputs.
-  def handle_event("keyboard-press", _params, socket)
-      when socket.assigns.current_row >= 7 do
-    {:noreply, socket}
-  end
-
-  # Register keyboard press
-  def handle_event("keyboard-press", %{"letter" => letter}, socket) do
-    {:noreply, add_letter(socket, letter)}
   end
 
   defp assign_carriage_return(socket) do
@@ -161,7 +182,7 @@ defmodule WordleWeb.GameLive do
     )
   end
 
-  def update_letters_used(letters_used, current_guess, current_word) do
+  defp update_letters_used(letters_used, current_guess, current_word) do
     current_guess
     |> String.codepoints()
     |> Enum.with_index()

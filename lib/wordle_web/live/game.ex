@@ -8,8 +8,14 @@ defmodule WordleWeb.Game do
       <%= for {row, guess} <- @guesses do %>
       <div id={"guess-row-#{row}"}
           class="flex"
-        phx-update="append"
-          data-bad-word={row |> shake_it_off()}
+          phx-update="append"
+          data-bad-word={ 
+            JS.transition(
+              %JS{},
+              "bg-red-100 shake",
+              time: 500,
+              to: "#guess-row-#{row}"
+            )}
       >
         <%= for {column, letter} <- guess do %>
           <div id={"letter-#{row}-#{column}"} class={"#{if row < @current_row, do: letter_classnames(@current_word, letter, column), else: " border-gray-300"} flex items-center justify-center m-0.5 w-16 h-16 border-2 text-4xl font-bold uppercase"}>
@@ -43,12 +49,6 @@ defmodule WordleWeb.Game do
   end
 
   defp shake_it_off(js \\ %JS{}, id) do
-    JS.transition(
-      js,
-      "bg-red-100 shake",
-      time: 500,
-      to: "##{id}"
-    )
   end
 
   defp guess_row_id(id) do

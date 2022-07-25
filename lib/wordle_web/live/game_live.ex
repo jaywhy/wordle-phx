@@ -8,14 +8,19 @@ defmodule WordleWeb.GameLive do
   alias Wordle.Server
 
   @impl true
-  def mount(_params, _session, socket) do
-    if connected?(socket), do: Server.subscribe()
+  def mount(%{"game" => uuid}, _session, socket) do
+    if connected?(socket), do: Server.subscribe(uuid)
 
     socket =
       socket
+      |> assign(:uuid, uuid)
       |> initialize_game_state
 
     {:ok, socket, temporary_assigns: [guesses: %{}]}
+  end
+
+  def mount(_params, _session, socket) do
+    {:ok, push_redirect(socket, to: "/?game=#{UUID.uuid1()}")}
   end
 
   @impl true
@@ -29,7 +34,7 @@ defmodule WordleWeb.GameLive do
 
   @impl true
   def handle_event("reset", _, socket) do
-    Wordle.Server.broadcast(:reset)
+    Wordle.Server.broadcast(socket.assigns.uuid, :reset)
     {:noreply, socket}
   end
 
@@ -40,7 +45,7 @@ defmodule WordleWeb.GameLive do
 
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
       when socket.assigns.current_column >= 6 do
-    Wordle.Server.broadcast(:enter)
+    Wordle.Server.broadcast(socket.assigns.uuid, :enter)
     {:noreply, socket}
   end
 
@@ -52,7 +57,7 @@ defmodule WordleWeb.GameLive do
 
   # Backspace one column
   def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket) do
-    Wordle.Server.broadcast(:remove_letter)
+    Wordle.Server.broadcast(socket.assigns.uuid, :remove_letter)
     {:noreply, socket}
   end
 
@@ -76,7 +81,7 @@ defmodule WordleWeb.GameLive do
 
   # Register keyboard press
   def handle_event("keyboard-press", %{"letter" => letter}, socket) do
-    Wordle.Server.broadcast(:add_letter, letter)
+    Wordle.Server.broadcast(socket.assigns.uuid, :add_letter, letter)
     {:noreply, socket}
   end
 

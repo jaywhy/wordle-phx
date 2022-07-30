@@ -4,19 +4,30 @@ defmodule WordleWeb.GameLive do
   import WordleWeb.Game
   import WordleWeb.Screens
 
-  alias Wordle.WordList
+  alias Wordle.GameState
   alias Wordle.Server
 
   @impl true
   def mount(%{"game" => uuid}, _session, socket) do
-    if connected?(socket), do: Server.subscribe(uuid)
+    if connected?(socket), do: subscribe(uuid)
+
+    socket =
+      if connected?(socket) do
+        pid = Server.start_link(uuid)
+
+        socket
+        |> assign(:pid, pid)
+        |> assign(Map.from_struct(Server.current_game_state(pid)))
+      else
+        socket
+        |> assign(GameState.new_as_map(uuid))
+      end
 
     socket =
       socket
-      |> assign(:uuid, uuid)
-      |> initialize_game_state
+      |> assign(:keyboard, create_keyboard())
 
-    {:ok, socket, temporary_assigns: [guesses: %{}]}
+    {:ok, socket, temporary_assigns: [board: %{}]}
   end
 
   def mount(_params, _session, socket) do
@@ -24,17 +35,8 @@ defmodule WordleWeb.GameLive do
   end
 
   @impl true
-  def handle_params(%{"test-word" => word}, _url, socket) do
-    {:noreply, assign(socket, :current_word, word)}
-  end
-
-  def handle_params(_params, _url, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
   def handle_event("reset", _, socket) do
-    Wordle.Server.broadcast(socket.assigns.uuid, :reset)
+    Wordle.Server.reset(socket.assigns.pid)
     {:noreply, socket}
   end
 
@@ -45,7 +47,7 @@ defmodule WordleWeb.GameLive do
 
   def handle_event("keyboard-press", %{"letter" => "Enter"}, socket)
       when socket.assigns.current_column >= 6 do
-    Wordle.Server.broadcast(socket.assigns.uuid, :enter)
+    Wordle.Server.press_enter(socket.assigns.pid)
     {:noreply, socket}
   end
 
@@ -57,7 +59,7 @@ defmodule WordleWeb.GameLive do
 
   # Backspace one column
   def handle_event("keyboard-press", %{"letter" => "Backspace"}, socket) do
-    Wordle.Server.broadcast(socket.assigns.uuid, :remove_letter)
+    Wordle.Server.remove_letter(socket.assigns.pid)
     {:noreply, socket}
   end
 
@@ -81,145 +83,26 @@ defmodule WordleWeb.GameLive do
 
   # Register keyboard press
   def handle_event("keyboard-press", %{"letter" => letter}, socket) do
-    Wordle.Server.broadcast(socket.assigns.uuid, :add_letter, letter)
+    Wordle.Server.add_letter(socket.assigns.pid, letter)
     {:noreply, socket}
   end
 
   @impl true
-  def handle_info({:add_letter, letter}, socket) do
-    {:noreply, add_letter(socket, letter)}
+  def handle_info({:update_state, changes}, socket) do
+    {:noreply, assign(socket, changes)}
   end
 
-  def handle_info({:remove_letter}, socket) do
-    {:noreply, remove_letter(socket)}
-  end
-
-  def handle_info({:enter}, socket) do
-    socket =
-      cond do
-        game_won?(socket.assigns) ->
-          socket
-          |> assign(:game_state, :won)
-          |> assign_carriage_return
-
-        game_lost?(socket.assigns) ->
-          socket
-          |> assign(:game_state, :lost)
-          |> assign_carriage_return
-
-        bad_word?(socket.assigns.current_guess) ->
-          socket
-          |> assign(:game_state, :bad_word)
-          |> push_event("bad-word", %{row: guess_row_id(socket.assigns.current_row)})
-
-        true ->
-          socket
-          |> assign_current_guess_to_letters_used()
-          |> assign_carriage_return()
-          |> assign(:current_column, 1)
-      end
-
-    {:noreply, socket}
-  end
-
-  def handle_info({:reset}, socket) do
+  def handle_info({:bad_word, changes}, socket) do
     socket =
       socket
-      |> initialize_game_state()
+      |> push_event("bad-word", %{row: guess_row_id(socket.assigns.current_row)})
+      |> assign(socket, changes)
 
     {:noreply, socket}
   end
 
-  defp assign_carriage_return(socket) do
-    socket
-    |> assign(:current_guess, "")
-    |> assign(:guesses, %{
-      socket.assigns.current_row => rerender_row(socket.assigns.current_guess)
-    })
-    |> assign(:current_row, socket.assigns.current_row + 1)
-  end
-
-  defp rerender_row(current_guess) do
-    for {x, i} <- current_guess |> String.codepoints() |> Enum.with_index(),
-        into: %{},
-        do: {i + 1, x}
-  end
-
-  defp add_letter(socket, letter) do
-    socket
-    |> assign(:guesses, %{
-      socket.assigns.current_row => %{socket.assigns.current_column => letter}
-    })
-    |> assign(:current_guess, socket.assigns.current_guess <> letter)
-    |> assign(:current_column, socket.assigns.current_column + 1)
-  end
-
-  defp remove_letter(socket) do
-    socket
-    |> assign(:guesses, %{
-      socket.assigns.current_row => %{(socket.assigns.current_column - 1) => ""}
-    })
-    |> assign(:current_column, socket.assigns.current_column - 1)
-    |> assign(:current_guess, socket.assigns.current_guess |> String.slice(0..-2))
-  end
-
-  defp initialize_game_state(socket) do
-    socket
-    |> assign(:game_state, :new)
-    |> assign(:current_word, WordList.random_word())
-    |> assign(:current_guess, "")
-    |> assign(:current_row, 1)
-    |> assign(:current_column, 1)
-    |> assign(:guesses, create_guesses())
-    |> assign(:keyboard, create_keyboard())
-    |> assign(:letters_used, create_letters_used())
-  end
-
-  defp assign_current_guess_to_letters_used(socket) do
-    socket
-    |> assign(
-      :letters_used,
-      update_letters_used(
-        socket.assigns.letters_used,
-        socket.assigns.current_guess,
-        socket.assigns.current_word
-      )
-    )
-  end
-
-  defp update_letters_used(letters_used, current_guess, current_word) do
-    current_guess
-    |> String.codepoints()
-    |> Enum.with_index()
-    |> Enum.reduce(letters_used, fn {key, position}, letters_used ->
-      letters_used
-      |> Map.update!(key, fn existing_value ->
-        cond do
-          existing_value == :match ->
-            :match
-
-          current_word |> String.at(position) == key ->
-            :match
-
-          current_word |> String.contains?(key) ->
-            :contains
-
-          true ->
-            :used
-        end
-      end)
-    end)
-  end
-
-  defp game_won?(assigns),
-    do: assigns.current_guess == assigns.current_word
-
-  defp game_lost?(assigns) do
-    assigns.current_row >= 6 && !game_won?(assigns)
-  end
-
-  defp bad_word?(current_guess) do
-    WordList.bad_word?(current_guess)
+  def subscribe(uuid) do
+    Phoenix.PubSub.subscribe(Wordle.PubSub, "game:#{uuid}")
   end
 
   defp guess_row_id(id) do
@@ -263,30 +146,11 @@ defmodule WordleWeb.GameLive do
       "h-14 text-sm m-0.5 px-2.5 md:px-4 md:p-3 md:h-16 md:text-base md:m-1 font-bold uppercase rounded touch-manipulation"
   end
 
-  def create_guesses do
-    guess_amount = 6
-    word_length = 5
-
-    for i <- 1..guess_amount, into: %{}, do: {i, create_guess(word_length)}
-  end
-
-  defp create_guess(word_length) do
-    for i <- 1..word_length, into: %{}, do: {i, ""}
-  end
-
   defp create_keyboard do
     [
       ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
       ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
       ["Enter", "z", "x", "c", "v", "b", "n", "m", "Backspace"]
     ]
-  end
-
-  defp create_letters_used do
-    ?a..?z
-    |> Enum.to_list()
-    |> List.to_string()
-    |> String.codepoints()
-    |> Map.new(&{&1, :unused})
   end
 end

@@ -6,7 +6,11 @@ defmodule Wordle.WordList do
   @allowed_list Wordle.LoadWordList.load(@allowed_list_path)
 
   def random_word() do
-    @word_list |> Enum.random() |> elem(0)
+    if Mix.env() == :test do
+      "hello"
+    else
+      @word_list |> Enum.random() |> elem(0)
+    end
   end
 
   def bad_word?(word) do

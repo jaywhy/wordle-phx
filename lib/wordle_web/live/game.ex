@@ -5,7 +5,7 @@ defmodule WordleWeb.Game do
 
   def board(assigns) do
     ~H"""
-      <%= for {row, guess} <- @guesses do %>
+      <%= for {row, guess} <- @board do %>
       <div id={"guess-row-#{row}"}
           class="flex"
           phx-update="append"

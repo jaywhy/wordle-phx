@@ -7,8 +7,8 @@
      <% nil %>
 <% end %>
 
-<div id="guesses" phx-update="append" class="flex flex-col items-center" phx-hook="BadWord">
-  <.board guesses={@guesses} current_word={@current_word} current_row={@current_row} />
+<div id="board" phx-update="append" class="flex flex-col items-center" phx-hook="BadWord">
+  <.board board={@board} current_word={@current_word} current_row={@current_row} />
 </div>
 <div class="flex flex-col items-center">
   <%= for row <- @keyboard do %>

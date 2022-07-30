@@ -1,33 +1,114 @@
 defmodule Wordle.GameState do
-  use GenServer
+  alias Wordle.WordList
 
-  @name __MODULE__
+  defstruct [
+    :uuid,
+    :game_state,
+    :current_word,
+    :current_row,
+    :current_column,
+    :board,
+    :letters_used
+  ]
 
-  # Client
-
-  def insert(uuid, game_state) do
-    GenServer.call(__MODULE__, {:insert, uuid, game_state})
+  def new(uuid) do
+    %__MODULE__{
+      uuid: uuid,
+      game_state: :new,
+      current_word: WordList.random_word(),
+      current_row: 1,
+      current_column: 1,
+      board: initialize_board(),
+      letters_used: initialize_letters_used()
+    }
   end
 
-  def lookup(uuid) do
-    GenServer.call(__MODULE__, {:lookup, uuid})
+  def new_as_map(uuid), do: new(uuid) |> Map.from_struct()
+
+  def new_from_map(game_state_map) do
+    struct(%__MODULE__{}, game_state_map)
   end
 
-  def start_link(_), do: GenServer.start_link(__MODULE__, [], name: @name)
-
-  # Server
-  def init(_) do
-    :ets.new(:game_state, [:set, :named_table, :public])
-    {:ok, :created}
+  def new_from_changes(game_state, game_state_changes) do
+    game_state
+    |> merge_changes(game_state_changes)
+    |> new_from_map()
   end
 
-  def handle_call({:insert, uuid, game_state}, _from, state) do
-    :ets.insert(:game_state, {uuid, game_state})
-    {:noreply, state}
+  def current_guess(game_state) do
+    game_state.board[game_state.current_row]
+    |> Map.values()
+    |> Enum.join()
   end
 
-  def handle_call({:lookup, uuid}, _from, state) do
-    :ets.lookup(:game_state, uuid)
-    {:noreply, state}
+  def carriage_return(game_state) do
+    game_state
+    |> current_guess
+    |> String.codepoints()
+    |> Enum.with_index()
+    |> Map.new(fn {letter, column} -> {column + 1, letter} end)
+  end
+
+  def game_won?(game_state),
+    do: current_guess(game_state) == game_state.current_word
+
+  def game_lost?(assigns) do
+    assigns.current_row >= 6 && !game_won?(assigns)
+  end
+
+  def merge_changes(original, changes) do
+    original
+    |> Map.from_struct()
+    |> Map.merge(changes, &merge/3)
+  end
+
+  def merge(_k, %{} = v1, %{} = v2) do
+    Map.merge(v1, v2, &merge/3)
+  end
+
+  def merge(_k, _v1, v2), do: v2
+
+  def update_letters_used(game_state) do
+    game_state
+    |> current_guess
+    |> String.codepoints()
+    |> Enum.with_index()
+    |> Enum.reduce(game_state.letters_used, fn {key, position}, letters_used ->
+      letters_used
+      |> Map.update!(key, fn existing_value ->
+        cond do
+          existing_value == :match ->
+            :match
+
+          game_state.current_word |> String.at(position) == key ->
+            :match
+
+          game_state.current_word |> String.contains?(key) ->
+            :contains
+
+          true ->
+            :used
+        end
+      end)
+    end)
+  end
+
+  defp initialize_board do
+    guess_amount = 6
+    word_length = 5
+
+    for i <- 1..guess_amount, into: %{}, do: {i, initialize_guess(word_length)}
+  end
+
+  defp initialize_guess(word_length) do
+    for i <- 1..word_length, into: %{}, do: {i, ""}
+  end
+
+  defp initialize_letters_used do
+    ?a..?z
+    |> Enum.to_list()
+    |> List.to_string()
+    |> String.codepoints()
+    |> Map.new(&{&1, :unused})
   end
 end

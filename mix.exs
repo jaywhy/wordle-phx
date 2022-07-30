@@ -50,7 +50,8 @@ defmodule Wordle.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:tailwind, "~> 0.1", runtime: Mix.env() == :dev},
-      {:uuid, "~> 1.1"}
+      {:uuid, "~> 1.1"},
+      {:deep_merge, "~> 1.0"}
     ]
   end
 

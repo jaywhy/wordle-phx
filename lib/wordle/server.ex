@@ -7,8 +7,7 @@ defmodule Wordle.Server do
   # Client
 
   def start_link(uuid) do
-    {:ok, pid} = GenServer.start_link(__MODULE__, [uuid])
-    pid
+    GenServer.start_link(__MODULE__, [uuid])
   end
 
   def add_letter(pid, letter) do

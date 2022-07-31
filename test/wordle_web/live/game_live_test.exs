@@ -8,17 +8,32 @@ defmodule WordleWeb.GameLiveTest do
 
   import Phoenix.LiveViewTest
 
+  describe "continuing a game" do
+    test "can leave and game and rejoin and keep your place", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/?game=1234")
+
+      view |> insert_guess("habit")
+
+      {:ok, view, _html} = live(conn, "/?game=1234")
+
+      assert has_element?(view, "#letter-1-1", "h")
+      assert has_element?(view, "#letter-1-2", "a")
+      assert has_element?(view, "#letter-1-3", "b")
+      assert has_element?(view, "#letter-1-4", "i")
+      assert has_element?(view, "#letter-1-5", "t")
+    end
+  end
+
   describe "keyboard" do
     test "keys are green when guess is in the right position", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
-
+      {:ok, view, _html} = start_game(conn)
       view |> insert_guess("habit")
 
       assert has_element?(view, "#key-h > button.bg-green-500")
     end
 
     test "keys are yellow when letter is in the word but not in the right position", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("abash")
 
@@ -26,7 +41,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "keys are dark gray when letter isn't in the word and has been used", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("abash")
 
@@ -34,7 +49,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "keys can change color from yellow to green", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view
       |> insert_guess("abash")
@@ -44,7 +59,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "keys can't change color from green to yellow", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view
       |> insert_guess("habit")
@@ -56,7 +71,7 @@ defmodule WordleWeb.GameLiveTest do
 
   describe "pressing backspace" do
     test "deletes a character", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view
       |> press_key("a")
@@ -66,7 +81,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "doesn't work if nothing is there", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> press_backspace()
 
@@ -75,7 +90,7 @@ defmodule WordleWeb.GameLiveTest do
   end
 
   test "adds letters to board", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?game=1")
+    {:ok, view, _html} = start_game(conn)
 
     view |> press_keys("hello")
 
@@ -87,7 +102,7 @@ defmodule WordleWeb.GameLiveTest do
   end
 
   test "can't overfill a row with letters", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/?game=1")
+    {:ok, view, _html} = start_game(conn)
 
     view
     |> press_keys("helloz")
@@ -97,7 +112,7 @@ defmodule WordleWeb.GameLiveTest do
 
   describe "pressing enter" do
     test "without a full row doesn't work", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view
       |> insert_guess("hell")
@@ -108,7 +123,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "with good word goes to next row", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view
       |> insert_guess("abash")
@@ -118,7 +133,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "with a bad word doesn't work", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view
       |> insert_guess("aaaaa")
@@ -128,7 +143,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "with a bad word pushs an event", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("aaaaa")
 
@@ -138,7 +153,7 @@ defmodule WordleWeb.GameLiveTest do
 
   describe "letter are colored" do
     test "green when in the right position", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("hello")
 
@@ -146,7 +161,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "yellow when the letter is present but in the wrong position", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("loser")
 
@@ -156,7 +171,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "gray when it's not a match", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("abash")
 
@@ -169,7 +184,7 @@ defmodule WordleWeb.GameLiveTest do
 
   describe "screen" do
     test "tells you when you've won", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("hello")
 
@@ -178,7 +193,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "when you win it colors the last row of letters", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> insert_guess("hello")
 
@@ -192,7 +207,7 @@ defmodule WordleWeb.GameLiveTest do
 
   describe "when you lose" do
     test "tells you when you've lose", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> lose_game("abash")
 
@@ -201,7 +216,7 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "still colors the last row of letters", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> lose_game("abash")
 
@@ -209,12 +224,16 @@ defmodule WordleWeb.GameLiveTest do
     end
 
     test "tells you the correct word", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/?game=1")
+      {:ok, view, _html} = start_game(conn)
 
       view |> lose_game("abash")
 
       assert has_element?(view, "#screen", "hello")
     end
+  end
+
+  defp start_game(conn) do
+    live(conn, "/") |> follow_redirect(conn)
   end
 
   defp has_new_game?(view) do

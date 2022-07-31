@@ -6,26 +6,24 @@ defmodule WordleWeb.GameLive do
 
   alias Wordle.GameState
   alias Wordle.Server
+  alias Wordle.ServerManager
 
   @impl true
   def mount(%{"game" => uuid}, _session, socket) do
-    if connected?(socket), do: subscribe(uuid)
-
     socket =
       if connected?(socket) do
-        pid = Server.start_link(uuid)
+        subscribe(uuid)
+        pid = ServerManager.connect(uuid)
 
         socket
-        |> assign(:pid, pid)
         |> assign(Map.from_struct(Server.current_game_state(pid)))
+        |> assign(:keyboard, create_keyboard())
+        |> assign(:pid, pid)
       else
         socket
+        |> assign(:keyboard, create_keyboard())
         |> assign(GameState.new_as_map(uuid))
       end
-
-    socket =
-      socket
-      |> assign(:keyboard, create_keyboard())
 
     {:ok, socket, temporary_assigns: [board: %{}]}
   end

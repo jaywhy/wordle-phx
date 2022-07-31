@@ -6,7 +6,7 @@ defmodule Wordle.WordList do
   @allowed_list Wordle.LoadWordList.load(@allowed_list_path)
 
   def random_word() do
-    if Mix.env() == :test do
+    if Application.get_env(:wordle, :environment) == :test do
       "hello"
     else
       @word_list |> Enum.random() |> elem(0)

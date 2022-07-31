@@ -20,8 +20,6 @@ defmodule Wordle.ServerManager do
 
   @impl true
   def handle_call({:connect, uuid}, _from, state) do
-    IO.inspect(state)
-
     if(Map.has_key?(state, uuid)) do
       {:reply, Map.get(state, uuid), state}
     else
